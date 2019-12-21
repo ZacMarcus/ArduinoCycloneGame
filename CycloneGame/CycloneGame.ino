@@ -2,10 +2,10 @@
 #define BUTTON_PRESSED LOW
 const int buttonPin = 2;     // the number of the pushbutton pin
 
-const int greenPin =  32;
+const int greenPin =  31;
 const int numberOLeds = 10;
-int allPins[] = {22, 23, 24, 25, 26, 27, 28, 29, 30, 31, greenPin};
-
+int allPins[] = {22, 23, 24, 25, 26, 27, 28, 29, 30, greenPin};
+int rgbPins[] = {10, 11, 12};
 
 // variables will change:
 int buttonState = 0;         // variable for reading the pushbutton status
@@ -16,7 +16,6 @@ volatile byte state = GAME_BUTTON_NOT_PRESSED;
 
 void setup() {
   // initialize the LED pin as an output:
-//  pinMode(ledPin, OUTPUT);
   int i=0;
   for(i=0; i<numberOLeds; i++)
   {
@@ -27,6 +26,11 @@ void setup() {
   pinMode(buttonPin, INPUT);
   digitalWrite(buttonPin, HIGH); //enable interal pullup resister
   attachInterrupt(digitalPinToInterrupt(buttonPin), buttonPressed, CHANGE);
+
+  //set difficulty led
+  pinMode(rgbPins[0], OUTPUT);
+  pinMode(rgbPins[1], OUTPUT);
+  pinMode(rgbPins[2], OUTPUT);
 
   // enable logging to serial
   Serial.begin(9600);
@@ -48,20 +52,80 @@ void loop() {
   digitalWrite(greenPin, LOW);
   buttonState = digitalRead(buttonPin);
 
-  state = GAME_BUTTON_NOT_PRESSED;
+  Serial.println("start");
 
+  const int numberOfRounds = 5;
+  int delay = 0;
+  int i=0;
+  for(i=0; i<numberOfRounds;)
+  {
+    switch(i)
+    {
+      case 0:
+        RGB_color(0, 255, 0);
+        delay = 120;
+        break;
+      case 1:
+        RGB_color(255, 64, 0);
+        delay = 100;
+        break;
+      case 2:
+        RGB_color(255, 32, 0);
+        delay = 80;
+        break;
+      case 3:
+        RGB_color(255, 16, 0);
+        delay = 60;
+        break;
+      case 4:
+        RGB_color(255, 0, 0);
+        delay = 40;
+        break;
+      
+    }
+    
+    bool success = playRound(delay);
+    if(success)
+    {
+      //Serial.println("success");
+      i = i + 1;
+    }
+    else
+    {
+      //Serial.println("failed");
+      i = 0;
+    }
+    
+  }
+  
+
+  
+}
+
+bool playRound(int timeDelay)
+{
+  state = GAME_BUTTON_NOT_PRESSED;
   int increment = -1;
   int i=0;
   while(true)
   {
-    digitalWrite(allPins[i], HIGH);
-    delay(50);
-    digitalWrite(allPins[i], LOW);
+    int currentLed = allPins[i];
+    digitalWrite(currentLed, HIGH);
+    delay(timeDelay);
+    digitalWrite(currentLed, LOW);
 
     if(state == GAME_BUTTON_PRESSED)
     {
-      blinkPin(allPins[i],100,10);
-      break;
+      blinkPin(currentLed,100,10);
+
+      if(currentLed == greenPin)
+      {
+        return true;
+      }
+      else
+      {
+        return false;
+      }
     }
     
     if(i == (numberOLeds-1) || i == 0)
@@ -71,8 +135,6 @@ void loop() {
 
     i = i + increment;
   }
-
-  
 }
 
 void buttonPressed()
@@ -90,4 +152,11 @@ void blinkPin(int pin, int delayTime, int numberOfBlinks)
     digitalWrite(pin, LOW);
     delay(delayTime);
   }
+}
+
+void RGB_color(int red_light_value, int green_light_value, int blue_light_value)
+ {
+  analogWrite(rgbPins[0], red_light_value);
+  analogWrite(rgbPins[1], green_light_value);
+  analogWrite(rgbPins[2], blue_light_value);
 }
